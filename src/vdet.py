@@ -241,10 +241,11 @@ def prepare_frames(comp: str, out: str, train_step: int, val_step: int, max_side
 
 
 def setup(train_step: int = 10, val_step: int = 5, max_side: int = 1600,
-          mask_ignore: bool = False, lowres_frac: float = 0.0) -> dict:
+          mask_ignore: bool = False, lowres_frac: float = 0.0, smoke: bool = False) -> dict:
     """Prepare (or restore from cache) the frame subset and return all paths as a dict `S`.
 
-    S["work"]      - outputs kept between sessions (runs, results, submissions)
+    S["work"]      - outputs kept between sessions (runs, results, submissions);
+                     smoke=True writes to <work>/smoke, so test runs never mix with real ones
     S["prep"]      - prepared train/val frames, labels, *_gt.json and data.yaml
     S["data_yaml"] - Ultralytics config
     S["test_root"] - folder with test_images.csv and test/images/...
@@ -283,6 +284,8 @@ def setup(train_step: int = 10, val_step: int = 5, max_side: int = 1600,
     else:
         S["test_root"] = get_comp(S)
     S.update(prep=prep, data_yaml=f"{prep}/data.yaml", tag=tag)
+    if smoke:
+        S["work"] = f"{S['work']}/smoke"
     for d in ["runs", "results", "figs", "submissions"]:
         os.makedirs(f"{S['work']}/{d}", exist_ok=True)
     return S
