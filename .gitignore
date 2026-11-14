@@ -1,10 +1,7 @@
-# Kaggle credentials - never commit them
 .kaggle_token
 kaggle*.json
 access_token
-# Python cache
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
-# temporary copies made by 00_run_all
-notebooks/_run_*.ipynb
+.DS_Store

@@ -1,3 +1,0 @@
-# Preinstalled on Kaggle / Colab GPU images: torch, torchvision, numpy, pandas, matplotlib, pillow, pyyaml
-ultralytics==8.4.207
-pycocotools
