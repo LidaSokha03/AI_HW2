@@ -7,7 +7,7 @@ date: 2026-11-16
 
 ## 1. Data and preprocessing
 
-The dataset VisDrone contains videos taken by drones and the task is to detect 8 types of objects (people, bicycle, car, van, truck, bus, motor). Train has 24201 photos from 56 videos, validation has 2846 photos from 7 videos, and the test set has 3811 photos from 48 videos. Train and validation come from different videos.
+The dataset VisDrone contains videos taken by drones and the task is to detect 8 types of objects (person, bicycle, car, van, truck, bus, motor, tricycle). Train has 24201 photos from 56 videos, validation has 2846 frames from 7 videos, and the test set has 3811 photos from 48 videos. Train and validation come from different videos.
 
 ![Class share in train and val](images/classes.png)
 
@@ -15,7 +15,7 @@ Classes are imbalanced: cars make up 46% of train boxes, while people are 30% an
 
 ![Object size, sqrt(w*h)](images/sizes.png)
 
-Most objects small in frame in the frame: 24% of boxes are smaller than 32×32 px and 64% are between 32 and 96 px, other 12% are large (>96x96px). If photos are resized to 640 px, 54% of the objects become smaller than 16 px, which is too little for the detector to see. At 1280 px this drops to 9.7%, so we train at 1280 even though it is slower. Also tried 1600px for YOLO but it was slower and took more GPU memory, but it gave better map.
+Most objects small in frame in the frame: 24% of boxes are smaller than 32×32 px and 64% are between 32 and 96 px, other 12% are large (>96x96px). If photos are resized to 640 px, 54% of the objects become smaller than 16 px, which is too little for the detector to see. At 1280 px this drops to 9.7%, so we train at 1280 even though it is slower. Also tried 1600px for YOLO but it was slower and took more GPU memory, but it gave better mAP.
 
 ![Mean objects per frame for each video](images/density.png)
 
@@ -59,20 +59,20 @@ The frcnn_dense experiment improved mAP from 0.196 to 0.206 and AP_small from 0.
 
 The RPN proposes boxes where an object might be. The second stage gives each box a class (one of eight classes or background) and makes the box more exact. RPN recall at IoU 0.5 grows from 0.67 with 100 proposals to 0.90 with 1000 proposals and then stays the same at 2000. This means that RPN misses about 10% of objects, mostly small ones. The second stage cannot detect them because it does not receive their boxes. So adding more proposals will not help much. A better way is to improve how the model detects small objects, for example by using higher-resolution features.
 
-**Failure cases**
-1. Small cars at the far end of the street: The model misses many cars and makes some false detections, probably because the cars are very small and too close to each other.
-2. People on motorcycles and scooters: Some objects have both red and yellow boxes. The model may predict the wrong class or box, probably because the person and motorcycle overlap a lot.
-3. Parked cars behind fences and trees: The model misses some cars in the row, probably because parts of them are hidden by fences or trees and the cars are parked close together.
-
 ![Faster R-CNN by object size](images/faster_rcnn_by_size.png)
 
 AP is lowest for small objects (0.07–0.09) and highest for large objects (around 0.37). The frcnn_dense experiment mostly helped small objects, increasing AP_small from 0.071 to 0.086, while AP_large stayed almost the same.
 
 ![Faster R-CNN failure cases](images/frcnn_failures.png)
 
-Default anchors start at 32 px and use aspect ratios of 0.5, 1, and 2. I chose the smallest anchor using the power of two closest to the 5th percentile of object sizes, limited to 8–32 px. I also used three anchor sizes per level and chose three aspect ratios using k-means on log(h/w) values from the training data.
+**Failure cases**
+1. Small cars at the far end of the street: The model misses many cars and makes some false detections, probably because the cars are very small and too close to each other.
+2. People on motorcycles and scooters: Some objects have both red and yellow boxes. The model may predict the wrong class or box, probably because the person and motorcycle overlap a lot.
+3. Parked cars behind fences and trees: The model misses some cars in the row, probably because parts of them are hidden by fences or trees and the cars are parked close together.
 
 ### 3.2 One-stage anchor-based: RetinaNet
+
+Default anchors start at 32 px and use aspect ratios of 0.5, 1, and 2. I chose the smallest anchor using the power of two closest to the 5th percentile of object sizes, limited to 8–32 px. I also used three anchor sizes per level and chose three aspect ratios using k-means on log(h/w) values from the training data.
 
 RetinaNet reached a maximum mAP of 0.062 with GIoU loss. Data-based anchors improved AP50 from 0.119 to 0.141 and AP_small from 0.017 to 0.028, but mAP dropped from 0.061 to 0.055. The model was still learning after four epochs, so it probably needed more training time. It also missed 82% of small objects.
 
@@ -126,7 +126,7 @@ With the same model weights, changing NMS from 0.5 to 0.7 has almost no differen
 
 I filled ignored regions in the training frames with gray, without changing the YOLOv8s 1600 model and run the model again. This improved mAP from 0.231 to 0.241, AP_small from 0.106 to 0.133, and the combined score from 0.217 to 0.226, because objects without labels in ignored regions no longer give the model confusing training signals.
 
-The larger YOLOv8m model trained on masked data reached mAP 0.248 and a combined score of 0.233, the best result among the model experiments. For the final pipeline, I used YOLOv8m with 1920 input, which reached mAP 0.286 on normal validation, but only 0.121 on the resized validation set. This is a risk because the public leaderboard also showed that yolo_1600 (0.2674) performed worse than yolo_base (0.2829), even though it was better on validation. A smaller input or TTA for low-resolution frames might be safer.
+The larger YOLOv8m model trained on masked data reached mAP 0.248 and a combined score of 0.233, the best result among the model experiments. For the final pipeline, I used YOLOv8m with 1920 input, which reached mAP 0.286 on normal validation, but only 0.121 on the resized validation set. This is a risk because the public leaderboard also showed that yolo_1600 (0.2674) performed worse than yolo_base (0.2829), even though it was better on validation. A smaller input or TTA for low-resolution frames might be safer. But in private leaderboard yolo_1600 works better then yolo_base
 
 ## 5. Leaderboard
 
@@ -141,14 +141,14 @@ My best submission reached 0.2159 on the private leaderboard, placing 56th and s
 
 The final model is YOLOv8m, trained on frames with gray-masked ignored regions and using an input size of 1920 for inference.
 
-Environment: Google Colab with T4 GPU.
-Run: In hw2.ipynb
-Data: Kaggle API token.
-Outputs: Results are saved to Google Drive. The final submission file is MyDrive/hw2/submission.csv, created in section 10.
-Dependencies: ultralytics, pycocotools, and kaggle are installed in the second cell. PyTorch and torchvision are already available in Colab.
-Settings and seed: Seed 42, TRAIN_STEP=20, VAL_STEP=5, MAX_SIDE=1600, IMGSZ=1280. Training epochs: 4 for torchvision models, 12 for YOLO, and 6 for RT-DETR. These settings are defined in the first cell.
-Re-running: Models already saved in MyDrive/hw2/runs are loaded instead of being trained again.
-Submitted file: The submission with private leaderboard score 0.2159 was created in section 8
+- Environment: Google Colab with T4 GPU.
+- Run: In hw2.ipynb
+- Data: Kaggle API token.
+- Outputs: Results are saved to Google Drive. The final submission file is MyDrive/hw2/submission.csv, created in section 10.
+- Dependencies: ultralytics, pycocotools, and kaggle are installed in the second cell. PyTorch and torchvision are already available in Colab.
+- Settings and seed: Seed 42, TRAIN_STEP=20, VAL_STEP=5, MAX_SIDE=1600, IMGSZ=1280. Training epochs: 4 for torchvision models, 12 for YOLO, and 6 for RT-DETR. These settings are defined in the first cell.
+- Re-running: Models already saved in MyDrive/hw2/runs are loaded instead of being trained again.
+-  Submitted file: The submission with private leaderboard score 0.2159 was created in section 8 (yolo_1600)
 
 ## 7. Conclusions
 
